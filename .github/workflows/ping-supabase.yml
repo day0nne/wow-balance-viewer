@@ -10,20 +10,19 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase Database via API
+      - name: Keep-Alive Supabase Postgres
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
-            -X GET "$SUPABASE_URL/rest/v1/realm_stats?select=timestamp&limit=1" \
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/rpc/keep_alive" \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json")
           
-          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
           echo "Status Code: $HTTP_STATUS"
           
           if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Ping failed with status $HTTP_STATUS"
+            echo "Failed to ping Supabase! Status: $HTTP_STATUS"
             exit 1
           fi
